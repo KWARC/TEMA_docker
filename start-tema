@@ -7,6 +7,8 @@ export LC_ALL=en_US.UTF-8
 # then waiting for es to finish setting up
 sleep 10
 # (5.2) Loading up elasticsearch index via MWS
+# If there is an error with size input for run-bulk, 
+# try increasing http.max_content_length in /etc/elasticsearch/elasticsearch.yml (or wherever the config file is)
 /var/data/mws/scripts/elastic-search/run-setup
 /var/data/mws/scripts/elastic-search/run-bulk /var/data/harvest/*.json
 # (5.3) Starting mwsd 
