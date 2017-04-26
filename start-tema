@@ -1,22 +1,31 @@
 #!/bin/bash
+
 ## (5) Tema Startup Script
 export LC_CTYPE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
-# (5.1) `service elasticsearch start` fails silently for some reason
+# (5.1) Start elastic-search 
 /usr/share/elasticsearch/bin/elasticsearch & 
 # then waiting for es to finish setting up
 sleep 10
+
 # (5.2) Loading up elasticsearch index via MWS
+
 # If there is an error with size input for run-bulk, 
-# try increasing http.max_content_length in /etc/elasticsearch/elasticsearch.yml (or wherever the config file is)
+# try increasing http.max_content_length in elasticsearch.yml 
 /var/data/mws/scripts/elastic-search/run-setup
 /var/data/mws/scripts/elastic-search/run-bulk /var/data/harvest/*.json
 # (5.3) Starting mwsd 
 mwsd -I /var/data/harvest/ -d
 # (5.4) Starting TEMA proxy
 nodejs /var/data/tema-proxy/tema-proxy.js &
+
 # (5.5) Starting MMT
 /var/data/MMT/deploy/mmt file /var/data/mmtarch/serve.msl --keepalive &
+
 # (5.6) Starting MWS/TEMA frontend
-# for some reason IP needs to be `0.0.0.0` instead of `127.0.0.1`/`localhost` or docker port forwarding fails
-cd /var/data/mws-frontend/ && php5 -S 0.0.0.0:8888 
+
+# You might want to change this if you don't use flag --net=host as it will
+# refer to the container's localhost that will be different from host's
+# localhost
+cd /var/data/mws-frontend/ && php5 -S localhost:9999 
+
