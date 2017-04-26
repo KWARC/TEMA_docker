@@ -1,0 +1,22 @@
+#!/bin/sh
+
+LOCAL_PATH=${PWD}
+
+printf '                    [ Cloning MWS ]\n'
+git clone https://github.com/KWARC/mws.git
+printf '                    [ Cloning MWS-frontend ]\n'
+git clone https://github.com/KWARC/mws-frontend.git
+printf '                    [ Cloning tema-proxy ]\n' 
+git clone https://github.com/KWARC/tema-proxy.git
+printf '                    [ Cloning MMT relevant archieve ]\n'
+svn co https://svn.kwarc.info/repos/MMT/deploy
+git clone http://gl.mathhub.info/oeis/TestOEIS.git mmtarch
+
+
+printf '                    [ Set mws-frontend branch ]\n'
+cd mws-frontend/ && git checkout oeis-demo
+printf '                    [ Adapt configuration files ]\n'
+cp $LOCAL_PATH/config.sh $LOCAL_PATH/mws/scripts/elastic-search/config.sh
+cp $LOCAL_PATH/config.js $LOCAL_PATH/tema-proxy/config.js
+printf '                    [ DONE ]\n'
+
