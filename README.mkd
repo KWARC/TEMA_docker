@@ -1,0 +1,120 @@
+# TeMa Docker
+
+This project contains configuration for setting up a docker instance of the Text and Math (TeMa) search system.
+The basic setup is for setting up search for an [MMT](https://github.com/KWARC/MMT) archive 
+but it should be straightforward to apply to other compatible by changing the configuration files.
+
+To directly install and run this version see [Installation](#installation).
+To learn how to configure TEMA search for your own archive, check the detailed documentation in [Setup Details](#setup-details) below.
+Additionally, check the file `Dockerfile` as well as the `start-tema` start-up script for the actual shell commands associated with the documentation.
+
+## Dependencies
+To set up a docker instance of TeMa, one needs:
+
+* Docker
+
+* Git
+
+* Subversion (svn)
+
+All other dependencies are downloaded automatically and internally within the docker container.
+
+
+  
+
+## Installation
+
+### Brief explanation of the docker related terms and commands used  below:
+
+* _image_ : the base on which you instantiate containers. You create an image by running `docker build`.
+
+* _container_ : a running instance of an image. You create a container by running `docker run`.
+
+* _Dockerfile_ : contains the build instructions to build the image.
+
+* _entrypoint_ : identify the default executable for your image.
+
+* `build` command creates an image based on the current Dockerfile. Flag `-t` gives the image a name and (optionally) a tag in the `name:tag` format.
+
+* `run` command creates a new container. Flag `-d` will run the container in background. Flag `--net` connects a container to a newtork. Flag `--entrypoint` overides the entry point of an image.
+
+### Installation steps
+
+Clone and install MWS and related programs by running:
+    
+    ./setup_env 
+
+After installing docker ([see the installation guide](https://docs.docker.com/installation/)) build the docker image by running (please note that this is a one-time command, unless changes to configuration files occur): 
+    
+    docker build -t "kwarc/tema:oeis" .
+
+Start the server by running:
+
+    docker run -d --net=host kwarc/tema:oeis start-tema
+    
+Start an interactive Bash session by running:
+
+    docker run -it --entrypoint /bin/bash <image>
+    
+
+<small>**Remark:** Docker daemon currently requires root privileges. This is due to the fact that the docker daemon binds to a Unix socket (that is owned by the root user).</small>
+
+For further informations regarding Docker commands and usage, please refer to [Docker Documentation](https://docs.docker.com/).
+
+## Config Files
+
+This repository contains the following configuration files: 
+
+* config.js - configuration file for tema-proxy server - Adapt ES and MWS hosts and ports accordingly to your needs and other config. files
+
+* config.sh - configuration file for ES start-up script located in `mws/scripts/elastic-search/` directory.
+
+* elasticsearch.yml - configuration file for ES
+
+
+
+
+## Setup Details 
+Starting from a bare-bones Linux installation (this instance is using Debian 8.1 -- jessie) 
+
+###1. Installing dependencies
+
+  1. Installing plain MWS &  Miscellaneous deps, mainly `g++`, `cmake` and a bunch of libs. 
+ Basically follows documentation from the [MWS readme](https://github.com/KWARC/mws).
+  2. Installing dependencies for the TeMa frontend. That is elasticsearch - for searching/indexing the text, 
+ php - for serving and curl - for setting up a couple of proxies (i.e. to the query processor (e.g. latexml) and mwsd) to avoid issues with e.g. blocked ports.
+  3. Installing `npm` for starting TeMa-proxy (uses `nodejs` instead of `php`).
+  4. Installing dependencies for MMT 
+
+###2. Cloning and installing MWS and related programs: 
+
+* [mws](https://github.com/KWARC/mws)
+
+* [mws-frontend](https://github.com/KWARC/mws-frontend)
+
+* [tema-proxy](https://github.com/KWARC/tema-proxy)
+
+###3. Add the relevant MMT archive (for which you want to set up the search engine).
+The current scripts assume the MathML-enriched HTML is in `export/planetary/narration/`
+and the TeMa config in `lib/tema-config.json`. 
+Additionally you can (need to) provide a query processor to convert math text queries from the input syntax 
+to MathML and then provide a Javascript module in MWS frontend that posts to your converter and enable it. 
+The default one is based on [LateXML](https://github.com/brucemiller/LaTeXML) and handles TeX-style input.
+The parametrization of query processors should probably be improved in the MWS frontend project. 
+_This is the part you need to change to make a different instance._
+
+###4. Setting up generated content
+  1. generate MWS harvests (via `mws/bin/docs2harvest`)
+  2. generate MWS index (via `mws/bin/mws-index`)
+  3. generate elasticsearch annotated documents (via `mws/bin/harvests2json`)
+  
+<small> **Note:** A full listing of mws commands and usage can be found in [MWS readme](https://github.com/KWARC/mws) </small>
+ 
+###5. Starting everything up (see separate startup script `start-tema`)
+  1. Start the elasticsearch service
+  2. Load the generated index (annotated documents) into elasticsearch (using the scripts `run-setup` and then 
+   `run-bulk` from `mws/scripts/elasticsearch/`)
+  3. Start the MWS daemon to serve the index
+  4. Start tema-proxy with `nodejs` 
+  5. Serve mws-frontend (php will take care of the other two proxies)
+
